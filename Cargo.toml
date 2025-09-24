@@ -10,8 +10,11 @@ exclude = ["tests", ".github"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+alloy = []
 
 [dependencies]
+alloy = { version = "1.0.35", features = ["rpc-types"] }
 iri-string = "0.7"
 hex = "0.4"
 k256 = { version = "0.13", default-features = false, features = [
@@ -24,7 +27,6 @@ thiserror = "1.0"
 http = "1.0.0"
 rand = "0.8.5"
 serde = { version = "1.0.164", optional = true }
-ethers = { version = "2.0.7", optional = true }
 typed-builder = { version = "0.14.0", optional = true }
 
 [dev-dependencies]

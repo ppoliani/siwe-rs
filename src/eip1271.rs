@@ -1,68 +1,38 @@
-use std::collections::BTreeMap;
-
-use ethers::{
-    abi::{Abi, Function, Param, ParamType, StateMutability},
-    contract::{AbiError, ContractInstance},
-    prelude::*,
+use std::iter::FromIterator;
+use alloy::{
+  primitives::{Address, Bytes}, providers::ProviderBuilder, rpc::client::RpcClient,
+  sol, transports::http::reqwest::Url
 };
 
 use crate::VerificationError;
 
-const METHOD_NAME: &str = "isValidSignature";
+sol! {
+  #[sol(rpc)] 
+  contract ERC1271 { 
+    function isValidSignature(
+      bytes32 hash,
+      bytes memory signature
+    ) public view returns (bytes4);
+  }
+}
 
 pub async fn verify_eip1271(
     address: [u8; 20],
     message_hash: &[u8; 32],
     signature: &[u8],
-    provider: &Provider<Http>,
+    rpc_url: &str
 ) -> Result<bool, VerificationError> {
-    #[allow(deprecated)]
-    let abi = Abi {
-        constructor: None,
-        functions: BTreeMap::from([(
-            METHOD_NAME.to_string(),
-            vec![Function {
-                name: METHOD_NAME.to_string(),
-                inputs: vec![
-                    Param {
-                        name: " _message".to_string(),
-                        kind: ParamType::FixedBytes(32),
-                        internal_type: Some("bytes32".to_string()),
-                    },
-                    Param {
-                        name: " _signature".to_string(),
-                        kind: ParamType::Bytes,
-                        internal_type: Some("bytes".to_string()),
-                    },
-                ],
-                outputs: vec![Param {
-                    name: "".to_string(),
-                    kind: ParamType::FixedBytes(4),
-                    internal_type: Some("bytes4".to_string()),
-                }],
-                constant: None,
-                state_mutability: StateMutability::View,
-            }],
-        )]),
-        events: BTreeMap::new(),
-        errors: BTreeMap::new(),
-        receive: false,
-        fallback: false,
-    };
+    let rpc_url = Url::parse(rpc_url).unwrap();
+    let rpc_client = RpcClient::new_http(rpc_url.into());
+    let provider = ProviderBuilder::new().connect_client(rpc_client);
+    let contract = ERC1271::new(Address::from_slice(&address), &provider);
+    let is_valid_result = contract.isValidSignature(
+        message_hash.into(),
+        Bytes::from_iter(signature),
+    ).call().await;
 
-    let contract = ContractInstance::<&Provider<Http>, Provider<Http>>::new(address, abi, provider);
-
-    match contract
-        .method::<_, [u8; 4]>(
-            METHOD_NAME,
-            (*message_hash, Bytes::from(signature.to_owned())),
-        )
-        .unwrap()
-        .call()
-        .await
-    {
+    match is_valid_result {
         Ok(r) => Ok(r == [22, 38, 186, 126]),
-        Err(ContractError::AbiError(AbiError::DecodingError(_))) => Ok(false),
         Err(e) => Err(VerificationError::ContractCall(e.to_string())),
     }
 }

@@ -5,7 +5,7 @@
 mod nonce;
 mod rfc3339;
 
-#[cfg(feature = "ethers")]
+#[cfg(feature = "alloy")]
 mod eip1271;
 
 use ::core::{
@@ -21,9 +21,6 @@ use sha3::{Digest, Keccak256};
 use std::convert::{TryFrom, TryInto};
 use thiserror::Error;
 use time::OffsetDateTime;
-
-#[cfg(feature = "ethers")]
-use ethers::prelude::*;
 
 #[cfg(feature = "serde")]
 use serde::{
@@ -342,9 +339,9 @@ typed_builder_doc! {
         pub nonce: Option<String>,
         /// Datetime for which the message should be valid at.
         pub timestamp: Option<OffsetDateTime>,
-        #[cfg(feature = "ethers")]
+        #[cfg(feature = "alloy")]
         /// RPC Provider used for on-chain checks. Necessary for contract wallets signatures.
-        pub rpc_provider: Option<Provider<Http>>,
+        pub rpc_url: Option<String>,
     }
 }
 
@@ -357,8 +354,8 @@ impl Default for VerificationOpts {
             domain: None,
             nonce: None,
             timestamp: None,
-            #[cfg(feature = "ethers")]
-            rpc_provider: None,
+            #[cfg(feature = "alloy")]
+            rpc_url: None,
         }
     }
 }
@@ -384,7 +381,7 @@ pub enum VerificationError {
     #[error("Message nonce does not match")]
     /// Expected message nonce does not match.
     NonceMismatch,
-    #[cfg(feature = "ethers")]
+    #[cfg(feature = "alloy")]
     // Using a String because the original type requires a lifetime.
     #[error("Contract wallet query failed: {0}")]
     /// Contract wallet verification failed unexpectedly.
@@ -452,7 +449,7 @@ impl Message {
         }
     }
 
-    #[cfg(feature = "ethers")]
+    #[cfg(feature = "alloy")]
     /// Verify the integrity of a, potentially, EIP-1271 signed message.
     ///
     /// # Arguments
@@ -466,10 +463,11 @@ impl Message {
     pub async fn verify_eip1271(
         &self,
         sig: &[u8],
-        provider: &Provider<Http>,
-    ) -> Result<bool, VerificationError> {
+        rpc_url: &str
+    ) -> Result<bool, VerificationError>
+    {
         let hash = Keccak256::new_with_prefix(self.eip191_bytes().unwrap()).finalize();
-        eip1271::verify_eip1271(self.address, hash.as_ref(), sig, provider).await
+        eip1271::verify_eip1271(self.address, hash.as_ref(), sig, rpc_url).await
     }
 
     /// Validates time constraints and integrity of the object by matching it's signature.
@@ -535,10 +533,10 @@ impl Message {
             Err(VerificationError::SignatureLength)
         };
 
-        #[cfg(feature = "ethers")]
+        #[cfg(feature = "alloy")]
         if let Err(e) = res {
-            if let Some(provider) = &opts.rpc_provider {
-                if self.verify_eip1271(sig, provider).await? {
+            if let Some(rpc_url) = &opts.rpc_url {
+                if self.verify_eip1271(sig, rpc_url).await? {
                     return Ok(());
                 }
             }
