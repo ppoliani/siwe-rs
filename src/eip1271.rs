@@ -1,6 +1,6 @@
 use std::iter::FromIterator;
 use alloy::{
-  primitives::{Address, Bytes}, providers::ProviderBuilder, rpc::client::RpcClient,
+  primitives::{Address, Bytes, FixedBytes}, providers::ProviderBuilder, rpc::client::RpcClient,
   sol, transports::http::reqwest::Url
 };
 
@@ -32,7 +32,9 @@ pub async fn verify_eip1271(
     ).call().await;
 
     match is_valid_result {
-        Ok(r) => Ok(r == [22, 38, 186, 126]),
+        Ok(FixedBytes([22, 38, 186, 126])) => Ok(true),
+        Ok(FixedBytes([255, 255, 255, 255])) => Ok(false),
+        Ok(_) => Err(VerificationError::Eip1271NonCompliant)?,
         Err(e) => Err(VerificationError::ContractCall(e.to_string())),
     }
 }

@@ -389,6 +389,11 @@ pub enum VerificationError {
     #[error("The signature is not 65 bytes long. It might mean that it is a EIP1271 signature and you have the `alloy` feature disabled or configured a provider.")]
     /// The signature is not 65 bytes long. It might mean that it is a EIP1271 signature and you have the `alloy` feature disabled or configured a provider.
     SignatureLength,
+    
+    /// The contract returned a response that does not comply with the EIP-1271 specification
+    #[cfg(feature = "alloy")]
+    #[error("This contract is not EIP1271 compliant")]
+    Eip1271NonCompliant,
 }
 
 /// Takes an UNPREFIXED eth address and returns whether it is in checksum format or not.
