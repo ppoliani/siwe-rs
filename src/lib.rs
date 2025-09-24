@@ -386,8 +386,8 @@ pub enum VerificationError {
     #[error("Contract wallet query failed: {0}")]
     /// Contract wallet verification failed unexpectedly.
     ContractCall(String),
-    #[error("The signature is not 65 bytes long. It might mean that it is a EIP1271 signature and you have the `ethers` feature disabled or configured a provider.")]
-    /// The signature is not 65 bytes long. It might mean that it is a EIP1271 signature and you have the `ethers` feature disabled or configured a provider.
+    #[error("The signature is not 65 bytes long. It might mean that it is a EIP1271 signature and you have the `alloy` feature disabled or configured a provider.")]
+    /// The signature is not 65 bytes long. It might mean that it is a EIP1271 signature and you have the `alloy` feature disabled or configured a provider.
     SignatureLength,
 }
 
@@ -801,7 +801,7 @@ Resources:
         include_str!("../tests/siwe/test/verification_positive.json");
     const VERIFICATION_NEGATIVE: &str =
         include_str!("../tests/siwe/test/verification_negative.json");
-    #[cfg(feature = "ethers")]
+    #[cfg(feature = "alloy")]
     const VERIFICATION_EIP1271: &str = include_str!("../tests/siwe/test/eip1271.json");
 
     fn fields_to_message(fields: &serde_json::Value) -> anyhow::Result<Message> {
@@ -912,7 +912,7 @@ Resources:
         }
     }
 
-    #[cfg(feature = "ethers")]
+    #[cfg(feature = "alloy")]
     #[tokio::test]
     async fn verification_eip1271() {
         let tests: serde_json::Value = serde_json::from_str(VERIFICATION_EIP1271).unwrap();
@@ -928,7 +928,7 @@ Resources:
             )
             .unwrap();
             let opts = VerificationOpts {
-                rpc_provider: Some("https://eth.llamarpc.com".try_into().unwrap()),
+                rpc_url: Some("https://eth.llamarpc.com".to_string()),
                 ..Default::default()
             };
             assert!(message.verify(&signature, &opts).await.is_ok());

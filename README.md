@@ -7,12 +7,12 @@ This crate provides a pure Rust implementation of EIP-4361: Sign In With Ethereu
 SIWE can be easily installed in any Rust project by including it in said project's `cargo.toml` file:
 
 ``` toml
-siwe = "0.6"
+siwe = "0.7"
 ```
 
 Features available:
 - `serde` for serialisation/deserialisation support;
-- `ethers` for EIP-1271 compliant contract wallets support; and
+- `alloy` for EIP-1271 compliant contract wallets support; and
 - `typed-builder` for nicer verification options construction.
 
 ## Usage
