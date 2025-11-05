@@ -14,7 +14,7 @@ exclude = ["tests", ".github"]
 alloy = []
 
 [dependencies]
-alloy = { version = "=1.0.5", features = ["rpc-types"] }
+alloy = { version = "=1.0.36", features = ["rpc-types"] }
 iri-string = "0.7"
 hex = "0.4"
 k256 = { version = "0.13", default-features = false, features = [
